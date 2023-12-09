@@ -1,83 +1,11 @@
 import * as vscode from 'vscode';
+import { DeferredPromise } from './DeferredPromise';
 
 const START_TOUR_COMMAND_ID = 'tour.startTour';
 
 interface ITourAgentResult extends vscode.ChatAgentResult2 {
 	tour: string;
 }
-
-//#region copied from the vs code utilities
-export type ValueCallback<T = unknown> = (value: T | Promise<T>) => void;
-
-const enum DeferredOutcome {
-	Resolved,
-	Rejected
-}
-
-const canceledName = 'Canceled';
-
-export class CancellationError extends Error {
-	constructor() {
-		super(canceledName);
-		this.name = this.message;
-	}
-}
-/**
- * Copied from the vs code utilities.
- */
-export class DeferredPromise<T> {
-
-	private completeCallback!: ValueCallback<T>;
-	private errorCallback!: (err: unknown) => void;
-	private outcome?: { outcome: DeferredOutcome.Rejected; value: any } | { outcome: DeferredOutcome.Resolved; value: T };
-
-	public get isRejected() {
-		return this.outcome?.outcome === DeferredOutcome.Rejected;
-	}
-
-	public get isResolved() {
-		return this.outcome?.outcome === DeferredOutcome.Resolved;
-	}
-
-	public get isSettled() {
-		return !!this.outcome;
-	}
-
-	public get value() {
-		return this.outcome?.outcome === DeferredOutcome.Resolved ? this.outcome?.value : undefined;
-	}
-
-	public readonly p: Promise<T>;
-
-	constructor() {
-		this.p = new Promise<T>((c, e) => {
-			this.completeCallback = c;
-			this.errorCallback = e;
-		});
-	}
-
-	public complete(value: T) {
-		return new Promise<void>(resolve => {
-			this.completeCallback(value);
-			this.outcome = { outcome: DeferredOutcome.Resolved, value };
-			resolve();
-		});
-	}
-
-	public error(err: unknown) {
-		return new Promise<void>(resolve => {
-			this.errorCallback(err);
-			this.outcome = { outcome: DeferredOutcome.Rejected, value: err };
-			resolve();
-		});
-	}
-
-	public cancel() {
-		return this.error(new CancellationError());
-	}
-}
-
-//#endregion
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -147,6 +75,7 @@ export function activate(context: vscode.ExtensionContext) {
 			console.log(tour);
 			return { tour: tour };
 		} else {
+			// TODO: handle the case when no slsh command is provided
 			vscode.window.showInformationMessage('No slash command provided');
 			return { tour: '' };
 		}
@@ -159,7 +88,7 @@ export function activate(context: vscode.ExtensionContext) {
 	agent.slashCommandProvider = {
 		provideSlashCommands(token) {
 			return [
-				{ name: 'createForOpenEditor', description: 'Create a CodeTour for the currently opened editor' }
+				{ name: 'createForOpenEditor', description: 'Create a CodeTour to guide users through the code in the active editor' }
 			];
 		}
 	};
@@ -170,12 +99,28 @@ export function activate(context: vscode.ExtensionContext) {
 				return [{
 					commandId: START_TOUR_COMMAND_ID,
 					args: [result.tour],
-					message: 'Start the new tour',
+					message: 'Start the tour',
 					title: vscode.l10n.t('Start the Tour')
 				}];
 			}
 		}
 	};
+
+	async function startTour(tour: any) {
+		const extensionId = 'vsls-contrib.codetour';
+		const extension = vscode.extensions.getExtension(extensionId);
+	
+		if (!extension) {
+			console.log(`Failed to get extension: ${extensionId}`);
+			return;
+		}
+		if (!extension.isActive) {
+			await extension.activate();
+		}
+	
+		const api = extension.exports;
+		api.startTour(tour);
+	}
 
 	context.subscriptions.push(
 		agent,
@@ -188,22 +133,6 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 		}),
 	);
-}
-
-async function startTour(tour: any) {
-	const extensionId = 'vsls-contrib.codetour';
-	const extension = vscode.extensions.getExtension(extensionId);
-
-	if (!extension) {
-		console.log(`Failed to get extension: ${extensionId}`);
-		return;
-	}
-	if (!extension.isActive) {
-		await extension.activate();
-	}
-
-	const api = extension.exports;
-	api.startTour(tour);
 }
 
 export function deactivate() { }
