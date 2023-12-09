@@ -119,15 +119,16 @@ export function activate(context: vscode.ExtensionContext) {
 					role: vscode.ChatMessageRole.User,
 					content: `Create tour for the following question:\n` +
 						`${request.prompt}\n` +
-						`In the steps use the following the file path ${filePath} as the 'file' attribute.\n` +
+						`Add a 'title' attribute to the tour that describes its purpose.\n` +
+						`Add a 'file' attribute in each step use the following the file path ${filePath} for its value.\n` +
 						`The code has a comment at the beginning of each line that corresponds to the line number of the file.\n` + 
 						`When creating a step for the tour use the line number in the comment.\n` +
 						`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
-						`Add a 'title' attribute to the tour that describes its purpose.\n` +
 						`This is the code that you should explain in a tour\n.` +
 						`${lineNumberPrefixed}`
 				},
 			];
+			
 			const chatRequest = access.makeRequest(messages, {}, token);
 
 			let tour = '';
