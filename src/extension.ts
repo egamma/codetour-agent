@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { DeferredPromise } from './DeferredPromise';
+import { DeferredPromise } from './deferredPromise';
 
 const START_TOUR_COMMAND_ID = 'tour.startTour';
 
