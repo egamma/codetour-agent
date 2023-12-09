@@ -121,14 +121,14 @@ export function activate(context: vscode.ExtensionContext) {
 						`${request.prompt}\n` +
 						`Add a 'title' attribute to the tour that describes its purpose.\n` +
 						`Add a 'file' attribute in each step use the following the file path ${filePath} for its value.\n` +
-						`The code has a comment at the beginning of each line that corresponds to the line number of the file.\n` + 
+						`The code has a comment at the beginning of each line that corresponds to the line number of the file.\n` +
 						`When creating a step for the tour use the line number in the comment.\n` +
 						`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
 						`This is the code that you should explain in a tour\n.` +
 						`${lineNumberPrefixed}`
 				},
 			];
-			
+
 			const chatRequest = access.makeRequest(messages, {}, token);
 
 			let tour = '';
@@ -180,9 +180,30 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		agent,
 		vscode.commands.registerCommand(START_TOUR_COMMAND_ID, async (arg) => {
-			vscode.window.showInformationMessage(`Start tour ${arg}`);
+			try {
+				let tour = JSON.parse(arg);
+				startTour(tour);
+			} catch (err) {
+				vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid.`);
+			}
 		}),
 	);
+}
+
+async function startTour(tour: any) {
+	const extensionId = 'vsls-contrib.codetour';
+	const extension = vscode.extensions.getExtension(extensionId);
+
+	if (!extension) {
+		console.log(`Failed to get extension: ${extensionId}`);
+		return;
+	}
+	if (!extension.isActive) {
+		await extension.activate();
+	}
+
+	const api = extension.exports;
+	api.startTour(tour);
 }
 
 export function deactivate() { }
