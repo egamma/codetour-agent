@@ -49,8 +49,8 @@ export function activate(context: vscode.ExtensionContext) {
 						`${request.prompt}\n` +
 						`Add a 'title' attribute to the tour that describes its purpose.\n` +
 						`Add a 'file' attribute in each step use the following the file path ${filePath} for its value.\n` +
-						`The code has a comment at the beginning of each line that corresponds to the line number of the file.\n` +
-						`When creating a step for the tour use the line number in the comment.\n` +
+						`Each line in the code starts with a comment that corresponds to the line number in the file.\n` +
+						`When creating a step for the tour use the line number from the comment at the beginning of the line.\n` +
 						`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
 						`This is the code that you should explain in a tour\n.` +
 						`${lineNumberPrefixed}`
@@ -71,7 +71,7 @@ export function activate(context: vscode.ExtensionContext) {
 				tour += fragment;
 			}
 
-			deferredPromise.complete({ content: 'Tour created.' });
+			deferredPromise.complete({ content: '' });
 			console.log(tour);
 			return { tour: tour };
 		} else {
