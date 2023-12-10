@@ -121,12 +121,41 @@ export function activate(context: vscode.ExtensionContext) {
 		const api = extension.exports;
 		api.startTour(tour);
 	}
+	
+	function validateTour(tour: any): boolean {
+		if (!tour || !tour.title || !tour.steps || !Array.isArray(tour.steps)) {
+			return false;
+		}
+
+		let previousLine = 0;
+		const lineSet = new Set<number>();
+
+		for (const step of tour.steps) {
+			if (!step || !step.file || !step.line || !step.description) {
+				return false;
+			}
+
+			const line = parseInt(step.line);
+			if (isNaN(line) || line <= previousLine || lineSet.has(line)) {
+				return false;
+			}
+
+			previousLine = line;
+			lineSet.add(line);
+		}
+
+		return true;
+	}
 
 	context.subscriptions.push(
 		agent,
 		vscode.commands.registerCommand(START_TOUR_COMMAND_ID, async (arg) => {
 			try {
 				let tour = JSON.parse(arg);
+				if (!validateTour(tour)) {
+					vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid. Please try again`);
+					return;
+				}
 				startTour(tour);
 			} catch (err) {
 				vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid.`);
