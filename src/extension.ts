@@ -86,7 +86,7 @@ export function activate(context: vscode.ExtensionContext) {
 				content: `Create tour for the following question:\n` +
 					`${request.prompt}\n` +
 					`Add a 'title' attribute to the tour that describes its purpose.\n` +
-					`Add a 'file' attribute in each step use the following the file path ${filePath} for its value.\n` +
+					`Add a 'file' attribute in each step use the following file path ${filePath} for its value.\n` +
 					`Each line in the code starts with a comment that corresponds to the line number in the file.\n` +
 					`When creating a step for the tour use the line number from the comment at the beginning of the line.\n` +
 					`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
