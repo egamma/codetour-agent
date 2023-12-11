@@ -5,135 +5,42 @@ User:		how is auto save implemented?
 User intent determined to be 'workspace' via the user
 
 2023-12-10T16:59:48.278Z [info] [PROMPT MESSAGES 0]
-System:		You are a software engineer with expert knowledge of the codebase the user has open in their workspace.
-			When asked for your name, you must respond with "GitHub Copilot".
-			Follow the user's requirements carefully & to the letter.
-			Your expertise is strictly limited to software development topics.
-			Follow Microsoft content policies.
-			Avoid content that violates copyrights.
-			For questions not related to software development, simply give a reminder that you are an AI programming assistant.
-			Keep your answers short and impersonal.
-			Use Markdown formatting in your answers.
-			Make sure to include the programming language name at the start of the Markdown code blocks.
-			Avoid wrapping the whole response in triple backticks.
-			The user works in an IDE called Visual Studio Code which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal.
-			The active document is the source code the user is looking at right now.
-			You can only give one reply for each conversation turn.
+System:		
+const content = "You are a software engineer with expert knowledge of the codebase the user has open in their workspace." +
+	"When asked for your name, you must respond with \"GitHub Copilot\"." +
+	"Follow the user's requirements carefully & to the letter." +
+	"Your expertise is strictly limited to software development topics." +
+	"Follow Microsoft content policies." +
+	"Avoid content that violates copyrights." +
+	"For questions not related to software development, simply give a reminder that you are an AI programming assistant." +
+	"Keep your answers short and impersonal." +
+	"Use Markdown formatting in your answers." +
+	"Make sure to include the programming language name at the start of the Markdown code blocks." +
+	"Avoid wrapping the whole response in triple backticks." +
+	"The user works in an IDE called Visual Studio Code which has a concept for editors with open files, integrated unit test support, an output pane that shows the output of running the code as well as an integrated terminal." +
+	"The active document is the source code the user is looking at right now." +
+	"You can only give one reply for each conversation turn.";
 			
-			Additional Rules
-			Think step by step:
+const additionalRules = "Additional Rules\n" +
+	"Think step by step:\n\n" +
+	"1. Read the provided relevant workspace information (code excerpts, file names, and symbols) to understand the user's workspace.\n\n" +
+	"2. Consider how to answer the user's prompt based on the provided information and your specialized coding knowledge. Always assume that the user is asking about the code in their workspace instead of asking a general programming question. Prefer using variables, functions, types, and classes from the workspace over those from the standard library.\n\n" +
+	"3. Generate a response that clearly and accurately answers the user's question. In your response, add fully qualified links for referenced symbols (example: [`namespace.VariableName`](path/to/file.ts)) and links for files (example: [path/to/file](path/to/file.ts)) so that the user can open them. If you do not have enough information to answer the question, respond with \"I'm sorry, I can't answer that question with what I currently know about your workspace\".\n\n" +
+	"Remember that you MUST add links for all referenced symbols from the workspace and fully qualify the symbol name in the link, for example: [`namespace.functionName`](path/to/util.ts).\n" +
+	"Remember that you MUST add links for all workspace files, for example: [path/to/file.js](path/to/file.js)";
 			
-			1. Read the provided relevant workspace information (code excerpts, file names, and symbols) to understand the user's workspace.
+
+User:		
+const projectNature = "npm" +
+	"typescript" +
+	"yarn";
+
+
+User:		
+Here are some potentially relevant code excerpts from the workspace:
 			
-			2. Consider how to answer the user's prompt based on the provided information and your specialized coding knowledge. Always assume that the user is asking about the code in their workspace instead of asking a general programming question. Prefer using variables, functions, types, and classes from the workspace over those from the standard library.
-			
-			3. Generate a response that clearly and accurately answers the user's question. In your response, add fully qualified links for referenced symbols (example: [`namespace.VariableName`](path/to/file.ts)) and links for files (example: [path/to/file](path/to/file.ts)) so that the user can open them. If you do not have enough information to answer the question, respond with "I'm sorry, I can't answer that question with what I currently know about your workspace".
-			
-			Remember that you MUST add links for all referenced symbols from the workspace and fully qualify the symbol name in the link, for example: [`namespace.functionName`](path/to/util.ts).
-			Remember that you MUST add links for all workspace files, for example: [path/to/file.js](path/to/file.js)
-			
-			Examples:
-			Question:
-			What file implements base64 encoding?
-			
-			Response:
-			Base64 encoding is implemented in [src/base64.ts](src/base64.ts) as [`encode`](src/base64.ts) function.
-			
-			
-			Question:
-			How can I join strings with newlines?
-			
-			Response:
-			You can use the [`joinLines`](src/utils/string.ts) function from [src/utils/string.ts](src/utils/string.ts) to join multiple strings with newlines.
-			
-			
-			Question:
-			How do I build this project?
-			
-			Response:
-			To build this TypeScript project, run the `build` script in the [package.json](package.json) file:
-			
-			```sh
-			npm run build
-			```
-			
-			
-			Question:
-			How do I read a file?
-			
-			Response:
-			To read a file, you can use a [`FileReader`](src/fs/fileReader.ts) class from [src/fs/fileReader.ts](src/fs/fileReader.ts).
-User:		I am working on a project of the following nature:
-			- npm
-			- typescript
-			- yarn
-User:		I am working in a workspace that has the following structure:
-			
-			```
-			.build/
-			.configurations/
-				configuration.dsc.yaml
-			.devcontainer/
-				Dockerfile
-				...
-			.editorconfig
-			.eslintignore
-			.eslintplugin/
-			.eslintrc.json
-			.git-blame-ignore-revs
-			.gitattributes
-			.github/
-			.gitignore
-			.lsifrc.json
-			.mailmap
-			.mention-bot
-			.nvmrc
-			.vscode/
-			.vscode-test.js
-			.yarnrc
-			CONTRIBUTING.md
-			CodeQL.yml
-			LICENSE.txt
-			README.md
-			SECURITY.md
-			ThirdPartyNotices.txt
-			build/
-			cglicenses.json
-			cgmanifest.json
-			cli/
-			extensions/
-			gulpfile.js
-			package.json
-			product.json
-			remote/
-			resources/
-			scripts/
-			src/
-			test/
-			tsfmt.json
-			```
-User:		Here are some potentially relevant file names from the workspace:
-			
-			- src/vs/workbench/contrib/notebook/browser/contrib/saveParticipants/saveParticipants.ts
-			- src/vs/workbench/contrib/codeEditor/browser/saveParticipants.ts
-			- src/vs/workbench/contrib/codeEditor/test/browser/saveParticipant.test.ts
-			- src/vs/platform/audioCues/browser/media/save.mp3
-			- extensions/typescript-language-features/src/languageFeatures/implementations.ts
-			- extensions/typescript-language-features/src/languageFeatures/codeLens/implementationsCodeLens.ts
-			- src/vs/workbench/services/configurationResolver/electron-sandbox/configurationResolverService.ts
-			- src/vs/workbench/services/configurationResolver/browser/configurationResolverService.ts
-			- src/vs/workbench/services/configurationResolver/common/configurationResolverSchema.ts
-			- src/vs/workbench/services/configurationResolver/common/configurationResolverUtils.ts
-			- src/vs/workbench/services/configurationResolver/common/configurationResolver.ts
-			- src/vs/workbench/services/configurationResolver/test/electron-sandbox/configurationResolverService.test.ts
-			- src/vs/workbench/services/configuration/common/configuration.ts
-			- src/vs/workbench/services/configuration/common/configurationCache.ts
-			- src/vs/workbench/services/configuration/common/configurationModels.ts
-			- src/vs/workbench/services/configuration/common/configurationEditing.ts
-User:		Here are some potentially relevant code excerpts from the workspace:
-			
-			`src/vs/workbench/browser/parts/editor/editorAutoSave.ts`
-			```ts
+FILENAME:`src/vs/workbench/browser/parts/editor/editorAutoSave.ts`
+```ts	
 			/*---------------------------------------------------------------------------------------------
 			 *  Copyright (c) Microsoft Corporation. All rights reserved.
 			 *  Licensed under the MIT License. See License.txt in the project root for license information.
@@ -351,44 +258,6 @@ User:		Here are some potentially relevant code excerpts from the workspace:
 			}
 			```
 			
-			`src/vs/workbench/contrib/notebook/common/notebookEditorInput.ts`
-			```ts
-			class NotebookEditorInput extends AbstractResourceEditorInput {
-				/*...*/
-				override isSaving(): boolean {
-					const model = this._editorModelReference?.object;
-					if (!model || !model.isDirty() || model.hasErrorState || this.hasCapability(EditorInputCapabilities.Untitled)) {
-						return false; // require the model to be dirty, file-backed and not in an error state
-					}
-			
-					// if a short auto save is configured, treat this as being saved
-					return this.filesConfigurationService.getAutoSaveMode(this) === AutoSaveMode.AFTER_SHORT_DELAY;
-				}
-				/*...*/
-			}
-			```
-			
-			`src/vs/workbench/contrib/notebook/common/notebookEditorInput.ts`
-			```ts
-			class NotebookEditorInput extends AbstractResourceEditorInput {
-				/*...*/
-				override async save(group: GroupIdentifier, options?: ISaveOptions): Promise<EditorInput | IUntypedEditorInput | undefined> {
-					if (this._editorModelReference) {
-			
-						if (this.hasCapability(EditorInputCapabilities.Untitled)) {
-							return this.saveAs(group, options);
-						} else {
-							await this._editorModelReference.object.save(options);
-						}
-			
-						return this;
-					}
-			
-					return undefined;
-				}
-				/*...*/
-			}
-			```
 User:		how is auto save implemented?
 
 			Auto save is implemented in the `EditorAutoSave` class in the [`src/vs/workbench/browser/parts/editor/editorAutoSave.ts`](command:_github.copilot.openRelativePath?%5B%22src%2Fvs%2Fworkbench%2Fbrowser%2Fparts%2Feditor%2FeditorAutoSave.ts%22%5D "src/vs/workbench/browser/parts/editor/editorAutoSave.ts") file. 
