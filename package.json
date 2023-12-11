@@ -12,7 +12,8 @@
         "vscode": "^1.84.0"
     },
     "extensionDependencies": [
-        "github.copilot-chat"
+        "github.copilot-chat",
+        "vsls-contrib.codetour"
     ],
     "categories": [
         "Other"

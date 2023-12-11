@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	const handler: vscode.ChatAgentHandler = async (request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, progress: vscode.Progress<vscode.ChatAgentProgress>, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
-		if (request.slashCommand?.name == 'createForOpenEditor') {
+		if (request.slashCommand?.name == 'explainEditor') {
 			const access = await vscode.chat.requestChatAccess('copilot');
 			if (!vscode.window.activeTextEditor) {
 				vscode.window.showInformationMessage(`There is no active editor, open an editor and try again.`);
@@ -73,6 +73,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 			deferredPromise.complete({ content: '' });
 			console.log(tour);
+			
 			return { tour: tour };
 		} else {
 			// TODO: handle the case when no slsh command is provided
@@ -88,7 +89,7 @@ export function activate(context: vscode.ExtensionContext) {
 	agent.slashCommandProvider = {
 		provideSlashCommands(token) {
 			return [
-				{ name: 'createForOpenEditor', description: 'Create a CodeTour to guide users through the code in the active editor' }
+				{ name: 'explainEditor', description: 'Create a CodeTour to guide users through the code in the active editor' }
 			];
 		}
 	};
