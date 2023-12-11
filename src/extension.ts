@@ -109,7 +109,18 @@ export function activate(context: vscode.ExtensionContext) {
 			tour += fragment;
 		}
 
-		deferredPromise.complete({ content: '' });
+		try {
+			let parsedTour = JSON.parse(tour);
+			if (validateTour(parsedTour)) {
+				deferredPromise.complete({ content: '' });
+			} else {
+				deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
+				tour = '';
+			}
+		} catch (err) {
+			deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
+			tour = '';
+		}
 		console.log(tour);
 		return tour;
 	}
@@ -162,7 +173,19 @@ export function activate(context: vscode.ExtensionContext) {
 			tour += fragment;
 		}
 
-		deferredPromise.complete({ content: '' });
+		try {
+			let parsedTour = JSON.parse(tour);
+			if (validateTour(parsedTour)) {
+				deferredPromise.complete({ content: '' });
+			} else {
+				deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
+				tour = '';
+			}
+		} catch (err) {
+			deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
+			tour = '';
+		}
+
 		console.log(tour);
 		return tour;
 	}
