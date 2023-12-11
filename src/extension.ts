@@ -40,7 +40,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 	const agent = vscode.chat.createChatAgent('codetour', handler);
 	agent.iconPath = vscode.Uri.joinPath(context.extensionUri, 'codetour.png');
-	agent.description = vscode.l10n.t('Explain with a code tour');
+	agent.description = vscode.l10n.t('Answer questions with a code tour');
 	agent.fullName = vscode.l10n.t('CodeTour');
 	agent.slashCommandProvider = {
 		provideSlashCommands(token) {
