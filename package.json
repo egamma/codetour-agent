@@ -1,5 +1,5 @@
 {
-    "name": "chat-agent-sample",
+    "name": "codetour-agent",
     "publisher": "vscode-samples",
     "displayName": "CodeTour Agent",
     "description": "An agent for creating code tours.",
