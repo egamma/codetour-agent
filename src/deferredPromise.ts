@@ -1,4 +1,3 @@
-// Copied from the vs code utilities
 
 export type ValueCallback<T = unknown> = (value: T | Promise<T>) => void;
 
