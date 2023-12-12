@@ -105,7 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 					`Each line in the code starts with a comment that corresponds to the line number in the file.\n` +
 					`When creating a step for the tour use the line number from the comment at the beginning of the line.\n` +
 					`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
-					`Only create on Code Tour step for each line of code that you want to explain.\n` +	
+					`Only create on Code Tourstep for each line of code that you want to explain.\n` +	
 					`This is the code that you should explain in a tour\n.` +
 					`${lineNumberPrefixed}`
 			},
@@ -130,11 +130,10 @@ export function activate(context: vscode.ExtensionContext) {
 			if (validateTour(parsedTour)) {
 				deferredPromise.complete({ content: '' });
 			} else {
-				deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
-				tour = '';
+				throw new Error('Invalid tour');
 			}
 		} catch (err) {
-			deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid pls retry...' });
+			deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid. Please retry...' });
 			tour = '';
 		}
 		console.log(tour);
@@ -187,13 +186,9 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.commands.registerCommand(START_TOUR_COMMAND_ID, async (arg) => {
 			try {
 				let tour = JSON.parse(arg);
-				if (!validateTour(tour)) {
-					vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid. Please try again`);
-					return;
-				}
 				startTour(tour);
 			} catch (err) {
-				vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid.`);
+				vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid. Please retry...`);
 			}
 		}),
 	);
