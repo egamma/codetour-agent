@@ -105,6 +105,7 @@ export function activate(context: vscode.ExtensionContext) {
 					`Each line in the code starts with a comment that corresponds to the line number in the file.\n` +
 					`When creating a step for the tour use the line number from the comment at the beginning of the line.\n` +
 					`Provide a detailed description for each step. The description may include markdown to improve its readability.\n` +
+					`Only create on Code Tour step for each line of code that you want to explain.\n` +	
 					`This is the code that you should explain in a tour\n.` +
 					`${lineNumberPrefixed}`
 			},
