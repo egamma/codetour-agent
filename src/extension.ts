@@ -7,19 +7,7 @@ interface ITourAgentResult extends vscode.ChatAgentResult2 {
 	tour: string;
 }
 
-enum ExplanationScope {
-	FullCode,
-	Selection
-}
-
 export function activate(context: vscode.ExtensionContext) {
-
-	// Prefix the lines with a number comment so that the LLM can create correct line numbers
-	function prefixLinesWithLineNumber(input: string, start: number): string {
-		const lines = input.split('\n');
-		const prefixedLines = lines.map((line, index) => `/*${index + start}*/ ${line}`);
-		return prefixedLines.join('\n');
-	}
 
 	function getRelativeFilePath(): string | undefined {
 		const activeEditor = vscode.window.activeTextEditor;
@@ -30,15 +18,40 @@ export function activate(context: vscode.ExtensionContext) {
 		return undefined;
 	}
 
+	function prefixLinesWithLineNumber(input: string, start: number): string {
+		const lines = input.split('\n');
+		const prefixedLines = lines.map((line, index) => `/*${index + start}*/ ${line}`);
+		return prefixedLines.join('\n');
+	}
+
+	function getFullCode(): string {
+		if (!vscode.window.activeTextEditor) {
+			return '';
+		}
+		const editor = vscode.window.activeTextEditor;
+		let code = editor.document.getText();
+		return prefixLinesWithLineNumber(code, 1);
+	}
+	
+	function getSelectionCode(): string {
+		if (!vscode.window.activeTextEditor) {
+			return '';
+		}
+		const editor = vscode.window.activeTextEditor;
+		const selection = editor.selection;
+		let code = editor.document.getText(selection.with({ start: selection.start.with({ character: 0 }), end: selection.end.with({ character: editor.document.lineAt(selection.end.line).text.length }) }));
+		return prefixLinesWithLineNumber(code, selection.start.line + 1);
+	}
+	
 	const handler: vscode.ChatAgentHandler = async (request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, progress: vscode.Progress<vscode.ChatAgentProgress>, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
 		if (request.slashCommand?.name == 'explainEditor') {
-			let tour = await explainCode(request, token, progress, ExplanationScope.FullCode);
+			let tour = await explainCode(request, token, progress, getFullCode);
 			return { tour: tour };
 		} else if (request.slashCommand?.name == 'explainSelection') {
-			let tour = await explainCode(request, token, progress, ExplanationScope.Selection);
+			let tour = await explainCode(request, token, progress, getSelectionCode);
 			return { tour: tour };
 		} else {
-			let tour = await explainCode(request, token, progress, ExplanationScope.FullCode);
+			let tour = await explainCode(request, token, progress, getFullCode);
 			return { tour: tour };
 		}
 	};
@@ -69,25 +82,15 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
-	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, progress: vscode.Progress<vscode.ChatAgentProgress>, scope: ExplanationScope): Promise<string> {
+	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, progress: vscode.Progress<vscode.ChatAgentProgress>, getCode: () => string): Promise<string> {
 		if (!vscode.window.activeTextEditor) {
 			vscode.window.showInformationMessage(`There is no active editor, open an editor and try again.`);
 			return '' ;
 		}
 		const access = await vscode.chat.requestChatAccess('copilot');
 		const filePath = getRelativeFilePath();
-		const editor = vscode.window.activeTextEditor;
-		let code: string;
-		let lineNumberPrefixed: string;
-		
-		if (scope === ExplanationScope.Selection) {
-			const selection = editor.selection;
-			code = editor.document.getText(selection.with({ start: selection.start.with({ character: 0 }), end: selection.end.with({ character: editor.document.lineAt(selection.end.line).text.length }) }));
-			lineNumberPrefixed = prefixLinesWithLineNumber(code, selection!.start.line + 1);
-		} else {
-			code = editor.document.getText();
-			lineNumberPrefixed = prefixLinesWithLineNumber(code, 1);
-		}
+		let lineNumberPrefixed = getCode();
+
 		const messages = [
 			{
 				role: vscode.ChatMessageRole.System,
@@ -195,3 +198,4 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() { }
+
