@@ -1,16 +1,3 @@
-# Chat Agent Example
+# Code Tour Agent
 
-This sample shows
-
-- How to contribute a chat agent.
-- How to use the chatRequestAccess API to request access to the chat.
-- How to respond with follow-ups.
-
-![demo](./demo.png)
-
-## Running the Sample
-
-- Run `npm install` in terminal to install dependencies
-- Run the `Run Extension` target in the Debug View. This will:
-	- Start a task `npm: watch` to compile the code
-	- Run the extension in a new VS Code window
+An agent that can create a code tour as supported by the [Code Tour Extension](https://marketplace.visualstudio.com/items?itemName=vsls-contrib.codetour) for the current selection or the editor.
