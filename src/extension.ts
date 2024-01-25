@@ -1,5 +1,4 @@
 import * as vscode from 'vscode';
-import { DeferredPromise } from './deferredPromise';
 
 const START_TOUR_COMMAND_ID = 'tour.startTour';
 
@@ -44,10 +43,10 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 	
 	const handler: vscode.ChatAgentHandler = async (request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, progress: vscode.Progress<vscode.ChatAgentProgress>, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
-		if (request.slashCommand?.name == 'explainEditor') {
+		if (request.subCommand == 'explainEditor') {
 			let tour = await explainCode(request, token, progress, getFullCode);
 			return { tour: tour };
-		} else if (request.slashCommand?.name == 'explainSelection') {
+		} else if (request.subCommand == 'explainSelection') {
 			let tour = await explainCode(request, token, progress, getSelectionCode);
 			return { tour: tour };
 		} else {
@@ -60,8 +59,8 @@ export function activate(context: vscode.ExtensionContext) {
 	agent.iconPath = vscode.Uri.joinPath(context.extensionUri, 'codetour.png');
 	agent.description = vscode.l10n.t('Answer questions with a code tour');
 	agent.fullName = vscode.l10n.t('CodeTour');
-	agent.slashCommandProvider = {
-		provideSlashCommands(token) {
+	agent.subCommandProvider = {
+		provideSubCommands(token) {
 			return [
 				{ name: 'explainEditor', description: 'Explain the code in the active editor with a code tour' },
 				{ name: 'explainSelection', description: 'Explain the code in the selection with a code tour' },
@@ -82,7 +81,7 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
-	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, progress: vscode.Progress<vscode.ChatAgentProgress>, getCode: () => string): Promise<string> {
+	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, progress: vscode.Progress<vscode.ChatAgentProgressMessage|vscode.ChatAgentContent>, getCode: () => string): Promise<string> {
 		if (!vscode.window.activeTextEditor) {
 			vscode.window.showInformationMessage(`There is no active editor, open an editor and try again.`);
 			return '' ;
@@ -120,10 +119,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 		let tour = '';
 
-		let deferredPromise: DeferredPromise<vscode.ChatAgentFileTree | vscode.ChatAgentContent> = new DeferredPromise();
-		progress.report({
-			placeholder: 'Creating the tour...',
-			resolvedContent: deferredPromise.p
+		progress.report({ 
+			message: 'Creating the tour...'
 		});
 
 		for await (const fragment of chatRequest.response) {
@@ -133,12 +130,12 @@ export function activate(context: vscode.ExtensionContext) {
 		try {
 			let parsedTour = JSON.parse(tour);
 			if (validateTour(parsedTour)) {
-				deferredPromise.complete({ content: '' });
+				progress.report({ content: 'Tour Created.'} );
 			} else {
 				throw new Error('Invalid tour');
 			}
 		} catch (err) {
-			deferredPromise.complete({ content: 'Tour creation failed, the tour is not valid. Please retry...' });
+			progress.report({ content: 'Tour creation failed, the created tour is not a valid Code Tour. Please retry...' });
 			tour = '';
 		}
 		console.log(tour);
