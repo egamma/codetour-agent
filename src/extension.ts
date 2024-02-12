@@ -6,6 +6,8 @@ interface ITourAgentResult extends vscode.ChatAgentResult2 {
 	tour: string;
 }
 
+const LANGUAGE_MODEL_ID = 'copilot-gpt-4';
+
 export function activate(context: vscode.ExtensionContext) {
 
 	function getRelativeFilePath(): string | undefined {
@@ -42,15 +44,15 @@ export function activate(context: vscode.ExtensionContext) {
 		return prefixLinesWithLineNumber(code, selection.start.line + 1);
 	}
 	
-	const handler: vscode.ChatAgentHandler = async (request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, progress: vscode.Progress<vscode.ChatAgentProgress>, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
-		if (request.subCommand == 'explainEditor') {
-			let tour = await explainCode(request, token, progress, getFullCode);
+	const handler: vscode.ChatAgentHandler = async (request: vscode.ChatAgentRequest, context: vscode.ChatAgentContext, stream: vscode.ChatAgentResponseStream, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
+		if (request.command == 'explainEditor') {
+			let tour = await explainCode(request, token, stream, getFullCode);
 			return { tour: tour };
-		} else if (request.subCommand == 'explainSelection') {
-			let tour = await explainCode(request, token, progress, getSelectionCode);
+		} else if (request.command == 'explainSelection') {
+			let tour = await explainCode(request, token, stream, getSelectionCode);
 			return { tour: tour };
 		} else {
-			let tour = await explainCode(request, token, progress, getFullCode);
+			let tour = await explainCode(request, token, stream, getFullCode);
 			return { tour: tour };
 		}
 	};
@@ -59,8 +61,8 @@ export function activate(context: vscode.ExtensionContext) {
 	agent.iconPath = vscode.Uri.joinPath(context.extensionUri, 'codetour.png');
 	agent.description = vscode.l10n.t('Answer questions with a code tour');
 	agent.fullName = vscode.l10n.t('CodeTour');
-	agent.subCommandProvider = {
-		provideSubCommands(token) {
+	agent.commandProvider = {
+		provideCommands(token) {
 			return [
 				{ name: 'explainEditor', description: 'Explain the code in the active editor with a code tour' },
 				{ name: 'explainSelection', description: 'Explain the code in the selection with a code tour' },
@@ -68,25 +70,13 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	};
 
-	agent.followupProvider = {
-		provideFollowups(result: ITourAgentResult, token: vscode.CancellationToken) {
-			if (result.tour.length > 0) {
-				return [{
-					commandId: START_TOUR_COMMAND_ID,
-					args: [result.tour],
-					message: 'Start the tour',
-					title: vscode.l10n.t('Start the Tour')
-				}];
-			}
-		}
-	};
-
-	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, progress: vscode.Progress<vscode.ChatAgentProgressMessage|vscode.ChatAgentContent>, getCode: () => string): Promise<string> {
+	async function explainCode(request: vscode.ChatAgentRequest, token: vscode.CancellationToken, stream: vscode.ChatAgentResponseStream, getCode: () => string): Promise<string> {
 		if (!vscode.window.activeTextEditor) {
 			vscode.window.showInformationMessage(`There is no active editor, open an editor and try again.`);
 			return '' ;
 		}
-		const access = await vscode.chat.requestChatAccess('copilot');
+		const access = await vscode.chat.requestLanguageModelAccess(LANGUAGE_MODEL_ID);
+
 		const filePath = getRelativeFilePath();
 		let lineNumberPrefixed = getCode();
 
@@ -115,30 +105,37 @@ export function activate(context: vscode.ExtensionContext) {
 			},
 		];
 
-		const chatRequest = access.makeRequest(messages, {}, token);
+		const chatRequest = access.makeChatRequest(messages, {}, token);
 
 		let tour = '';
 
-		progress.report({ 
-			message: 'Creating the tour...'
-		});
+		stream.progress('Creating the Code Tour...');
 
-		for await (const fragment of chatRequest.response) {
+		for await (const fragment of chatRequest.stream) {
 			tour += fragment;
 		}
 
 		try {
 			let parsedTour = JSON.parse(tour);
 			if (validateTour(parsedTour)) {
-				progress.report({ content: 'Tour Created.'} );
+				stream.markdown('Code Tour Created.');
 			} else {
-				throw new Error('Invalid tour');
+				throw new Error('Invalid Code Tour');
 			}
 		} catch (err) {
-			progress.report({ content: 'Tour creation failed, the created tour is not a valid Code Tour. Please retry...' });
+			stream.markdown('Apologies, but the created tour is not a valid Code Tour. Please retry...');
 			tour = '';
 		}
 		console.log(tour);
+
+		if (tour.length > 0) {
+			stream.button({
+				command: START_TOUR_COMMAND_ID,
+				arguments: [tour],
+				title: vscode.l10n.t('Start the Tour')
+			});
+		}
+
 		return tour;
 	}
 
