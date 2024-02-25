@@ -7,6 +7,7 @@ interface ITourAgentResult extends vscode.ChatResult {
 }
 
 const LANGUAGE_MODEL_ID = 'copilot-gpt-4';
+const MAX_RETRIES = 3;
 
 export function activate(context: vscode.ExtensionContext) {
 
@@ -102,37 +103,48 @@ export function activate(context: vscode.ExtensionContext) {
 			),
 		];
 
+		let retries = 0;
+		let tour = '';
+		for (; ;) {
+			if (retries++ >= MAX_RETRIES || token.isCancellationRequested) {
+				break;
+			}
+			stream.progress('Creating a Code Tour...');
+			tour = await createTour(access, messages, token);
+			try {
+				let parsedTour = JSON.parse(tour);
+				if (validateTour(parsedTour)) {
+					stream.markdown('Code Tour Created.');
+					break;
+				} else {
+					throw new Error('Invalid Code Tour');
+				}
+			} catch (err) {
+				stream.markdown('Apologies, but the created tour is not a valid Code Tour, retrying...');
+				tour = '';
+			}
+		}
+		if (tour.length <= 0) {
+			stream.markdown(`Failed to create a Code Tour after multiple attempts, giving up.`);
+			return '';
+		}
+		stream.button({
+			command: START_TOUR_COMMAND_ID,
+			arguments: [tour],
+			title: vscode.l10n.t('Start the Tour')
+		});
+		return tour;
+	}
+
+	async function createTour(access: vscode.LanguageModelAccess, messages: vscode.LanguageModelMessage[], token: vscode.CancellationToken): Promise<string> {
 		const chatRequest = access.makeChatRequest(messages, {}, token);
 
 		let tour = '';
-
-		stream.progress('Creating the Code Tour...');
-
 		for await (const fragment of chatRequest.stream) {
 			tour += fragment;
 		}
 
-		try {
-			let parsedTour = JSON.parse(tour);
-			if (validateTour(parsedTour)) {
-				stream.markdown('Code Tour Created.');
-			} else {
-				throw new Error('Invalid Code Tour');
-			}
-		} catch (err) {
-			stream.markdown('Apologies, but the created tour is not a valid Code Tour. Please retry...');
-			tour = '';
-		}
 		console.log(tour);
-
-		if (tour.length > 0) {
-			stream.button({
-				command: START_TOUR_COMMAND_ID,
-				arguments: [tour],
-				title: vscode.l10n.t('Start the Tour')
-			});
-		}
-
 		return tour;
 	}
 
