@@ -9,23 +9,42 @@
     },
     "version": "0.1.0",
     "engines": {
-        "vscode": "^1.85.0"
+        "vscode": "^1.86.0"
     },
     "extensionDependencies": [
         "github.copilot-chat",
         "vsls-contrib.codetour"
     ],
     "categories": [
-        "Other"
+        "Chat"
     ],
     "activationEvents": [
         "onStartupFinished"
     ],
     "enabledApiProposals": [
         "chatParticipant",
-        "languageModels"
+        "languageModels",
+        "interactive"
     ],
     "main": "./out/extension.js",
+    "contributes": {
+        "commands": [
+            {
+                "command": "codetour-participant.createTour",
+                "title": "Explain with CodeTour",
+                "category": "CodeTour Participant"
+            }
+        ],
+        "menus": {
+            "copilot": [
+                {
+                    "command": "codetour-participant.createTour",
+                    "when": "!github.copilot.interactiveSession.disabled",
+                    "group": "copilotAction@20"
+                }
+            ]
+        }
+    },
     "scripts": {
         "vscode:prepublish": "npm run compile",
         "compile": "tsc -p ./",

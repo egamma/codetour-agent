@@ -1,6 +1,9 @@
 import * as vscode from 'vscode';
 
+import * as scopePicker from './scopePicker';
+
 const START_TOUR_COMMAND_ID = 'tour.startTour';
+const CREATE_TOUR_COMMAND_ID = 'codetour-participant.createTour';
 
 interface ITourAgentResult extends vscode.ChatResult {
 	tour: string;
@@ -120,7 +123,7 @@ export function activate(context: vscode.ExtensionContext) {
 					throw new Error('Invalid Code Tour');
 				}
 			} catch (err) {
-				stream.markdown('Apologies, but the created tour is not a valid Code Tour, retrying...');
+				stream.markdown('The created tour is not valid, retrying...');
 				tour = '';
 			}
 		}
@@ -189,16 +192,31 @@ export function activate(context: vscode.ExtensionContext) {
 		return true;
 	}
 
+	async function startTourCommand(arg: any) {
+		try {
+			let tour = JSON.parse(arg);
+			startTour(tour);
+		} catch (err) {
+			vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid. Please retry...`);
+		}
+	}
+
+	async function createTourCommand() {
+		if (vscode.window.activeTextEditor) {
+			let selection = vscode.window.activeTextEditor.selection;
+			if (selection.isEmpty) {
+				if (!await scopePicker.selectRange(vscode.window.activeTextEditor, selection)) {
+					return;
+				};
+			}
+		}
+		vscode.interactive.sendInteractiveRequestToProvider('copilot', { message: '@codetour' });
+	}
+
 	context.subscriptions.push(
 		codeTourParticipant,
-		vscode.commands.registerCommand(START_TOUR_COMMAND_ID, async (arg) => {
-			try {
-				let tour = JSON.parse(arg);
-				startTour(tour);
-			} catch (err) {
-				vscode.window.showInformationMessage(`Could not start the tour, the tour is not valid. Please retry...`);
-			}
-		}),
+		vscode.commands.registerCommand(START_TOUR_COMMAND_ID, startTourCommand),
+		vscode.commands.registerCommand(CREATE_TOUR_COMMAND_ID, createTourCommand)
 	);
 }
 
