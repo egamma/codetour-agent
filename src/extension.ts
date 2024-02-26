@@ -90,6 +90,13 @@ export function activate(context: vscode.ExtensionContext) {
 			}
 			stream.progress('Creating a Code Tour...');
 			tour = await createTour(access, messages, token);
+
+			// Remove the triple backticks lines if the model has wrapped the JSON response in ```
+			if (tour.startsWith('```json')) {
+				const lines = tour.split('\n');
+				tour = lines.slice(1, -1).join('\n');
+			}
+
 			try {
 				let parsedTour = JSON.parse(tour);
 				if (validateTour(parsedTour)) {
@@ -122,7 +129,6 @@ export function activate(context: vscode.ExtensionContext) {
 		for await (const fragment of chatRequest.stream) {
 			tour += fragment;
 		}
-
 		console.log(tour);
 		return tour;
 	}
