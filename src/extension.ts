@@ -29,59 +29,34 @@ export function activate(context: vscode.ExtensionContext) {
 		return prefixedLines.join('\n');
 	}
 
-	function getFullCode(): string {
-		if (!vscode.window.activeTextEditor) {
-			return '';
-		}
-		const editor = vscode.window.activeTextEditor;
-		let code = editor.document.getText();
-		return prefixLinesWithLineNumber(code, 1);
-	}
-
-	function getSelectionCode(): string {
-		if (!vscode.window.activeTextEditor) {
-			return '';
-		}
-		const editor = vscode.window.activeTextEditor;
-		const selection = editor.selection;
-		let code = editor.document.getText(selection.with({ start: selection.start.with({ character: 0 }), end: selection.end.with({ character: editor.document.lineAt(selection.end.line).text.length }) }));
-		return prefixLinesWithLineNumber(code, selection.start.line + 1);
-	}
-
 	const handler: vscode.ChatRequestHandler = async (request: vscode.ChatRequest, context: vscode.ChatContext, stream: vscode.ChatResponseStream, token: vscode.CancellationToken): Promise<ITourAgentResult> => {
-		if (request.command == 'explainEditor') {
-			let tour = await explainCode(request, token, stream, getFullCode);
-			return { tour: tour };
-		} else if (request.command == 'explainSelection') {
-			let tour = await explainCode(request, token, stream, getSelectionCode);
-			return { tour: tour };
-		} else {
-			let tour = await explainCode(request, token, stream, getFullCode);
-			return { tour: tour };
-		}
+		let tour = await explainWithCodeTour(request, token, stream);
+		return { tour: tour };
 	};
 
 	const codeTourParticipant = vscode.chat.createChatParticipant('codetour', handler);
 	codeTourParticipant.iconPath = vscode.Uri.joinPath(context.extensionUri, 'codetour.png');
 	codeTourParticipant.description = vscode.l10n.t('Answer questions with a code tour');
-	codeTourParticipant.commandProvider = {
-		provideCommands(token) {
-			return [
-				{ name: 'explainEditor', description: 'Explain the code in the active editor with a code tour' },
-				{ name: 'explainSelection', description: 'Explain the code in the selection with a code tour' },
-			];
-		}
-	};
 
-	async function explainCode(request: vscode.ChatRequest, token: vscode.CancellationToken, stream: vscode.ChatResponseStream, getCode: () => string): Promise<string> {
-		if (!vscode.window.activeTextEditor) {
+	async function explainWithCodeTour(request: vscode.ChatRequest, token: vscode.CancellationToken, stream: vscode.ChatResponseStream): Promise<string> {
+		const editor = vscode.window.activeTextEditor;
+		if (!editor) {
 			vscode.window.showInformationMessage(`There is no active editor, open an editor and try again.`);
 			return '';
 		}
+
+		if (editor.selection.isEmpty) {
+			if (!await scopePicker.selectRange(editor, editor.selection)) {
+				return '';
+			};
+		}
+
 		const access = await vscode.lm.requestLanguageModelAccess(LANGUAGE_MODEL_ID);
 
 		const filePath = getRelativeFilePath();
-		let lineNumberPrefixed = getCode();
+		const selection = editor.selection;
+		let selectedText = editor.document.getText(selection.with({ start: selection.start.with({ character: 0 }), end: selection.end.with({ character: editor.document.lineAt(selection.end.line).text.length }) }));
+		const lineNumberPrefixed = prefixLinesWithLineNumber(selectedText, selection.start.line + 1);
 
 		const messages = [
 			new vscode.LanguageModelSystemMessage(
@@ -202,14 +177,6 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	async function createTourCommand() {
-		if (vscode.window.activeTextEditor) {
-			let selection = vscode.window.activeTextEditor.selection;
-			if (selection.isEmpty) {
-				if (!await scopePicker.selectRange(vscode.window.activeTextEditor, selection)) {
-					return;
-				};
-			}
-		}
 		vscode.interactive.sendInteractiveRequestToProvider('copilot', { message: '@codetour' });
 	}
 
