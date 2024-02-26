@@ -64,6 +64,7 @@ export function activate(context: vscode.ExtensionContext) {
 				`When asked to explain the code you should respond with a code tour JSON file.\n` +
 				`The JSON schema of the code tour file is "https://aka.ms/codetour-schema"\n` +
 				`Only respond with the contents of the code tour file as JSON and nothing else.\n` +
+				`Do not wrap the JSON response in triple backticks.\n` +
 				`When creating the tour then follow these guidelines:\n` +
 				`- Add a 'title' attribute to the tour that describes its purpose.\n` +
 				`- Add a 'file' attribute in each step use the following file path ${filePath} for its value.\n` +
