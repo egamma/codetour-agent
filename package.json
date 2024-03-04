@@ -19,7 +19,6 @@
         "Chat"
     ],
     "activationEvents": [
-        "onStartupFinished"
     ],
     "enabledApiProposals": [
         "chatParticipant",
@@ -28,6 +27,12 @@
     ],
     "main": "./out/extension.js",
     "contributes": {
+        "chatParticipants": [
+            {
+                "name": "codetour",
+                "description": "Explain how the code works with a CodeTour"
+            }
+        ],
         "commands": [
             {
                 "command": "codetour-participant.createTour",
