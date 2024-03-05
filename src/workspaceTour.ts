@@ -80,10 +80,9 @@ function getWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
     return undefined;
 }
 
-async function findExcerptStartLineNumber(workspaceFolder: vscode.WorkspaceFolder, fileName: string, codeExcerpt: string): Promise<number> {
+async function findExcerptStartLineNumber(workspaceFolder: vscode.WorkspaceFolder, fileName: string, excerptLines: string[]): Promise<number> {
     let fullPath = path.join(workspaceFolder.uri.fsPath, fileName);
     const document = await vscode.workspace.openTextDocument(fullPath);
-    const excerptLines = codeExcerpt.split('\n');
 
     for (let i = 0; i < document.lineCount; i++) {
         // excerpts do not always start at the first character, therefore only check whether the first
@@ -143,8 +142,7 @@ async function addLineNumbersToCodeExcerpts(input: string): Promise<string> {
     return result;
 }
 
-function getLongestExcerptWithoutElision(codeExcerpt: string): string {
-    const lines = codeExcerpt.split('\n');
+function getLongestExcerptWithoutElision(lines: string[]): [number, number] {
     let longestSequenceStart = 0;
     let longestSequenceEnd = 0;
     let currentSequenceStart = 0;
@@ -164,14 +162,29 @@ function getLongestExcerptWithoutElision(codeExcerpt: string): string {
             currentSequenceEnd = i + 1;
         }
     }
-    // Extract the longest sequence of real content lines and join them into a single string
-    const longestSequence = lines.slice(longestSequenceStart, longestSequenceEnd + 1).join('\n');
-    return longestSequence;
+    return [ longestSequenceStart, longestSequenceEnd ];
 }
 
 async function addLineNumberPrefixToCodeExcerpt(workspaceFolder: vscode.WorkspaceFolder, fileName: string, codeExcerpt: string) {
-    const excerptWithoutElision = getLongestExcerptWithoutElision(codeExcerpt);
-    const startingLineNumber = await findExcerptStartLineNumber(workspaceFolder, fileName, excerptWithoutElision);
-    let numberedExcerpt = toursCommon.prefixLinesWithLineNumber(excerptWithoutElision, startingLineNumber);
-    return numberedExcerpt;
+    // lines before the excerpt without elision are prefixed with -1
+    // lines of the excerpt are prefixed starting from startLineNumber
+    // lines after the execerpt without elision are prefixed with -1
+
+    const excerptLines = codeExcerpt.split('\n');
+    const [start, end] = getLongestExcerptWithoutElision(excerptLines);
+
+    const excerptLinesWithoutElision = excerptLines.slice(start, end + 1);
+    const excerptWithoutElision = excerptLinesWithoutElision.join('\n');
+
+    const startingLineNumber = await findExcerptStartLineNumber(workspaceFolder, fileName, excerptLinesWithoutElision);
+    
+    const before = excerptLines.slice(0, start + 1).join('\n');
+    const beforePrefixed = toursCommon.prefixLinesWithLineNumber(before, -1);
+
+    const bodyPrefixed = toursCommon.prefixLinesWithLineNumber(excerptWithoutElision, startingLineNumber);
+
+    const after = excerptLines.slice(end + 1).join('\n');
+    const afterPrefixed = toursCommon.prefixLinesWithLineNumber(after, -1);;
+
+    return beforePrefixed+bodyPrefixed+afterPrefixed;
 }
