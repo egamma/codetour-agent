@@ -2,7 +2,9 @@ import * as vscode from 'vscode';
 
 export const START_TOUR_COMMAND_ID = 'tour.startTour';
 
+//export const LANGUAGE_MODEL_ID = 'copilot-gpt-3.5-turbo';
 export const LANGUAGE_MODEL_ID = 'copilot-gpt-4';
+
 export const MAX_RETRIES = 3;
 
 export function prefixLinesWithLineNumber(input: string, startLineNumber: number): string {

@@ -55,11 +55,17 @@ export async function createSingleFileCodeTour(resolvedPrompt: string, token: vs
             break;
         }
         stream.progress('Creating a Code Tour...');
+
         const response = await vscode.lm.sendChatRequest(toursCommon.LANGUAGE_MODEL_ID, messages, {}, token);
         tour = await toursCommon.processResponse(response, token);
 
         // Remove the triple backticks lines if the model has wrapped the JSON response in ```
         if (tour.startsWith('```json')) {
+            const lines = tour.split('\n');
+            tour = lines.slice(1, -1).join('\n');
+        }
+        // Remove the square brackets if the model has wrapped the JSON response in [] 
+        if (tour.startsWith('[')) {
             const lines = tour.split('\n');
             tour = lines.slice(1, -1).join('\n');
         }

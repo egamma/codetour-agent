@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { SymbolKind } from "vscode";
 
-
 export async function selectRange(editor: vscode.TextEditor, selection: vscode.Selection): Promise<boolean> {
     let result: vscode.DocumentSymbol[] = await vscode.commands.executeCommand('vscode.executeDocumentSymbolProvider', editor.document.uri);
 
@@ -34,6 +33,30 @@ export async function selectRange(editor: vscode.TextEditor, selection: vscode.S
         }
     } else {
         selectAll(editor);
+    }
+    return true;
+}
+
+export async function selectRangeUsingAPI(editor: vscode.TextEditor, selection: vscode.Selection): Promise<boolean> {
+    const extensionId = 'GitHub.copilot-chat';
+    const extension = vscode.extensions.getExtension(extensionId);
+
+    if (!extension) {
+        console.log(`Failed to get extension: ${extensionId}`);
+        return false;
+    }
+    if (!extension.isActive) {
+        await extension.activate();
+    }
+
+    const api = extension.exports.getAPI(1);
+    if (!api) {
+        console.log(`Failed to get API from extension: ${extensionId}`);
+        return false;
+    }
+    let result = await api.selectScope(editor);
+    if (!result) {
+        return false;
     }
     return true;
 }
