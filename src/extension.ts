@@ -76,7 +76,11 @@ export function activate(context: vscode.ExtensionContext) {
 	}
 
 	async function createTourCommand() {
-		vscode.interactive.sendInteractiveRequestToProvider('copilot', { message: '@codetour' });
+		const commandId = 'workbench.action.chat.open';
+		const options = {
+			query: `@codetour create a tour explaining the selection`
+		};
+		await vscode.commands.executeCommand(commandId, options);
 	}
 
 	context.subscriptions.push(
