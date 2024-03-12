@@ -52,6 +52,12 @@ export async function createWorkspaceCodeTour(resolvedPrompt: string, relevantCo
             tour = lines.slice(1, -1).join('\n');
         }
 
+        // Remove the square brackets if the model has wrapped the JSON response in [] 
+        if (tour.startsWith('[')) {
+            const lines = tour.split('\n');
+            tour = lines.slice(1, -1).join('\n');
+        }
+
         try {
             JSON.parse(tour);
             stream.markdown('Code Tour Created.');
@@ -162,7 +168,7 @@ function getLongestExcerptWithoutElision(lines: string[]): [number, number] {
             currentSequenceEnd = i + 1;
         }
     }
-    return [ longestSequenceStart, longestSequenceEnd ];
+    return [longestSequenceStart, longestSequenceEnd];
 }
 
 async function addLineNumberPrefixToCodeExcerpt(workspaceFolder: vscode.WorkspaceFolder, fileName: string, codeExcerpt: string) {
@@ -180,7 +186,7 @@ async function addLineNumberPrefixToCodeExcerpt(workspaceFolder: vscode.Workspac
     const excerptWithoutElision = excerptLinesWithoutElision.join('\n');
 
     const startingLineNumber = await findExcerptStartLineNumber(workspaceFolder, fileName, excerptLinesWithoutElision);
-    
+
     if (0 !== start) {
         const before = excerptLines.slice(0, start).join('\n');
         beforePrefixed = toursCommon.prefixLinesWithLineNumber(before, -1);

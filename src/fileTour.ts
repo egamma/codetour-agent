@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 import * as toursCommon from './toursCommon';
-import * as scopePicker from './scopePicker';
 
 export async function createSingleFileCodeTour(resolvedPrompt: string, token: vscode.CancellationToken, stream: vscode.ChatResponseStream): Promise<string> {
     const editor = vscode.window.activeTextEditor;
@@ -11,7 +10,7 @@ export async function createSingleFileCodeTour(resolvedPrompt: string, token: vs
     }
 
     if (editor.selection.isEmpty) {
-        if (!await scopePicker.selectRange(editor, editor.selection)) {
+        if (!await toursCommon.selectRange(editor)) {
             return '';
         };
     }
